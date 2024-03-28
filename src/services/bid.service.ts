@@ -1,20 +1,28 @@
+import { Sequelize } from 'sequelize';
 import { Bid } from '../models/bid.model';
 import { Item } from '../models/item.model';
+import mysqlService from './mysql.service';
+
 
 export class BidService {
   private static instance: BidService;
+  private db: Sequelize;
 
-  private constructor() {}
+  private constructor(connect: Sequelize) {    
+    this.db = connect;
+  }
 
-  public static getInstance(): BidService {
+  public static getInstance(): BidService {    
     if (!BidService.instance) {
-      BidService.instance = new BidService();
+      BidService.instance = new BidService(mysqlService.getConnect());
     }
 
     return BidService.instance;
   }
 
   public async addBid({ item_id, price, user_id }: { item_id: number, price: number, user_id: number }): Promise<Bid> {
+    const transaction = await this.db.transaction();
+    
     try {
       const item = await Item.findOne({
         attributes: ['status', 'start_price'],
@@ -27,7 +35,9 @@ export class BidService {
           as: 'bids',
           order: [['price', 'DESC']],
           limit: 1
-        }]
+        }],
+        transaction,
+        lock: true
       });
 
       if (!item) {
@@ -52,11 +62,14 @@ export class BidService {
         item_id,
         price,
         user_id: +user_id,
-        created_at: Date.now()
-      });
+        created_at: Date.now(),
+      }, { transaction });
+
+      await transaction.commit();
 
       return result;
-    } catch (error) {
+    } catch (error) {            
+      await transaction.rollback();
       throw error;
     }
   }

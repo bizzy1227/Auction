@@ -5,8 +5,19 @@ import { initUserModel, User } from '../models/user.model';
 
 class MysqlService {
   private sequelize!: Sequelize;
+  private static instance: MysqlService;
 
-  constructor() {}
+  constructor() {
+    this.connect();
+  }
+
+  public static getInstance(): MysqlService {
+    if (!MysqlService.instance) {
+      MysqlService.instance = new MysqlService();
+    }
+
+    return MysqlService.instance;
+  }
 
   init(): void {
     this.initModels();
@@ -26,7 +37,11 @@ class MysqlService {
     Bid.belongsTo(User, { foreignKey: 'user_id' });
   }
 
-  connect(): void {
+  getConnect(): Sequelize {
+    return this.sequelize
+  }
+
+  connect(): void {    
     this.sequelize = new Sequelize('auction_db', 'root', 'root', {
       host: 'localhost',
       dialect: 'mysql',
@@ -40,4 +55,4 @@ class MysqlService {
   }
 }
 
-export default MysqlService;
+export default MysqlService.getInstance();

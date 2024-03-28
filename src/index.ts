@@ -2,9 +2,7 @@ import Server from './server';
 import MysqlService from './services/mysql.service';
 
 (async () => {
-  const db = new MysqlService();
-  db.connect();
-  db.init();
+  await MysqlService.init();
 
   const api = new Server();
 
